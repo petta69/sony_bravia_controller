@@ -1,0 +1,10 @@
+{
+    "bravia_host_01": "192.168.111.96",
+    "bravia_use_https_01": false,
+    "bravia_psk_01": "Sony1234!",
+    "bravia_host_02": "192.168.111.225",
+    "bravia_use_https_02": false,
+    "bravia_psk_02": "sony123456789012",
+    "bluray_host": "192.168.111.10",
+    "bluray_port": 23
+}
