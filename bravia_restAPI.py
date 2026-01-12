@@ -9,8 +9,8 @@ requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.
 
 
 class BRAVIA_RESTAPI:
-    def __init__(self, host_ip: str, psk: str) -> None:
-        self.logger = Logger
+    def __init__(self, host_ip: str, psk: str):
+        self.logger = Logger().get_logger()
         if self.validate_ipaddress(host_string=host_ip):
             self._host_ip = host_ip
             self._headers = {'X-Auth-PSK': f'{psk}'}
@@ -41,6 +41,7 @@ class BRAVIA_RESTAPI:
         self.logger.info(f'Trying: {r.url}')
         self.logger.info(f'Status: {r.status_code}')
         self.logger.info(f'Response: {r.text}')
+        return r.json()
         
     def set_power(self, state: str):
         if state.lower() not in ['on', 'off']:
@@ -97,10 +98,12 @@ class BRAVIA_RESTAPI:
 
         
 if __name__ == "__main__":
-    bravia1 = BRAVIA_RESTAPI(host_ip='192.168.111.225', psk='sony123456789012')
+    bravia1 = BRAVIA_RESTAPI(host_ip='192.168.111.223', psk='sony123456789012')
     bravia2 = BRAVIA_RESTAPI(host_ip='192.168.111.96', psk='Sony1234!')
     
-    bravia1.set_brightness(10)
-    bravia2.set_brightness(25)
+    br1_pwr = bravia1.get_power_status()
+    br2_pwr = bravia2.get_power_status()
+
+    print(f"Bravia1 Power Status: {br1_pwr}")
+    print(f"Bravia2 Power Status: {br2_pwr}")
     
-    bravia2.get_brightness()

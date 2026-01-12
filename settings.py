@@ -17,6 +17,7 @@ class ModelConfig(BaseModel):
     bravia_psk_02: Optional[str] = "sony123456789012"
     bluray_host: Optional[str] = "192.168.111.10"
     bluray_port: Optional[int] = 23
+    verbose: Optional[int] = 5
     
     
 

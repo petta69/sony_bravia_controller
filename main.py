@@ -20,13 +20,15 @@ from logger import Logger
 logger = Logger(name=__name__, level=config.verbose, file_path="/tmp/rsony_bravia_controller.txt").get_logger()
 
 from bravia_restAPI import BRAVIA_RESTAPI
-from lib.system import reboot_rpi
+#from lib.system import reboot_rpi
 
 
-app = FastAPI(title="RPI5 Control")
+app = FastAPI(title="BRAVIA Control")
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/images", StaticFiles(directory="images"), name="images")
+app.mount("/icons", StaticFiles(directory="icons"), name="icons")
+
 templates = Jinja2Templates(directory="templates")
 
 
@@ -41,19 +43,22 @@ class ModelBRAVIA(str, Enum):
      SetBrightness10 = "SetBrightness10"
      SetBrightness25 = "SetBrightness25"
      SetBrightness49 = "SetBrightness49"
+     GetBrightness = "GetBrightness"
      SetPowerOn = "SetPowerOn"
      SetPowerOff = "SetPowerOff"
+     GetPowerStatus = "GetPowerStatus"
+     
 
 
 class ModelBluRay(str, Enum):
     '''
     Valid functions for the BluRay class
     '''
-    SetPowerOn = "SetPowerOn"
-    SetPowerOff = "SetPowerOff"
-    Play = "Play"
-    Pause = "Pause"
-    Stop = "Stop"
+    SetPowerOn = "BluRay_SetPowerOn"
+    SetPowerOff = "BluRay_SetPowerOff"
+    Play = "BluRay_Play"
+    Pause = "BluRay_Pause"
+    Stop = "BluRay_Stop"
 
 class ModelSystem(str, Enum):
     '''
@@ -95,15 +100,26 @@ async def bravia_api_function(function: ModelBRAVIA):
     except:
         return {"ERROR": "Could not connect to host"}
     if function is ModelBRAVIA.SetBrightness10:
-        result.append(srgcgi_controller.srg_start_autoframing())
-    elif function is ModelSRGCGI.AutoFramingStop:
-        result.append(srgcgi_controller.srg_stop_autoframing())
-    elif function is ModelSRGCGI.Preset1:
-        result.append(srgcgi_controller.srg_stop_autoframing())
-        result.append(srgcgi_controller.srg_recall_preset(presetpos=1))
-    elif function is ModelSRGCGI.Preset2:
-        result.append(srgcgi_controller.srg_stop_autoframing())
-        result.append(srgcgi_controller.srg_recall_preset(presetpos=2))
+        result.append(bravia1.set_brightness(10))
+        result.append(bravia2.set_brightness(10))
+    elif function is ModelBRAVIA.SetBrightness25:
+        result.append(bravia1.set_brightness(25))
+        result.append(bravia2.set_brightness(25))
+    elif function is ModelBRAVIA.SetBrightness49:
+        result.append(bravia1.set_brightness(49))
+        result.append(bravia2.set_brightness(49))
+    elif function is ModelBRAVIA.SetPowerOn:
+        result.append(bravia1.set_power("on"))
+        result.append(bravia2.set_power("on"))
+    elif function is ModelBRAVIA.SetPowerOff:
+        result.append(bravia1.set_power("off"))
+        result.append(bravia2.set_power("off"))
+    elif function is ModelBRAVIA.GetBrightness:
+        result.append(bravia1.get_brightness())
+        result.append(bravia2.get_brightness())
+    elif function is ModelBRAVIA.GetPowerStatus:
+        result.append(bravia1.get_power_status())
+        result.append(bravia2.get_power_status())
     return result
 
 
@@ -112,165 +128,20 @@ async def bravia_api_function(function: ModelBRAVIA):
 
 ## TemplateResponse
 @app.get("/", response_class=HTMLResponse)
-async def home(request: Request):
-    config = ReadConfig()
-    return templates.TemplateResponse(
-        request=request, name="index.html"
-    )
-
-
-
-@app.get("/zrct300", response_class=HTMLResponse)
-async def zrct300(request: Request, function: ModelADCP | None=None):
+async def bravia(request: Request, function: ModelBRAVIA | None=None):
     ## If we get a function we need to execute that action. Result is used to print status.
     config = ReadConfig()
     context = {}
     if function:
-        result = await adcp_api_function(function)
+        result = await bravia_api_function(function)
         ## Create context to pass to bootstrap
         context["status"] = result
 
     return templates.TemplateResponse(
-        request=request, name="zrct300.html", context=context
+        request=request, name="bravia.html", context=context
     )
 
-@app.get("/srg", response_class=HTMLResponse)
-async def srg(request: Request, function: ModelSRGCGI | None=None):
-    ## If we get a function we need to execute that action. Result is used to print status.
-    config = ReadConfig()
-    context = {}
-    if function:
-        result = await srgcgi_api_function(function)
-        ## Create context to pass to bootstrap
-        context["status"] = result
 
-    return templates.TemplateResponse(
-        request=request, name="srg.html", context=context
-    )
-
-@app.get('/settings', response_class=HTMLResponse)
-async def settings(request: Request):
-    ## Uses settings.json to print all valid keys and values
-    config = ReadConfig()
-    settings = {}
-    context = {}
-    for k,v in iter(config):
-        ## Transcode BaseModel object to dict
-        print(f"{k} -> {v}")
-        settings[k] = v
-    context['config'] = settings
-    ## Read schedule
-    cron_read = read_crontab(cron_user=current_user)
-    context['config'].update(cron_read)
-    return templates.TemplateResponse(
-        request=request, name="settings.html", context=context
-    )
-
-@app.post('/settings')
-async def settings_update(request: Request, 
-                          vlc_default_videodir: str = Form(config.vlc_default_videodir),
-                          vlc_custom_usb_videodir: str = Form(config.vlc_custom_usb_videodir),
-                          adcp_host: str = Form(config.adcp_host),
-                          adcp_port: int = Form(config.adcp_port),
-                          adcp_password: str = Form(config.adcp_password),
-                          adcp_use_schedule: bool = Form(False),
-                          srgcgi_host: str = Form(config.srgcgi_host),
-                          srgcgi_port: int = Form(config.srgcgi_port),
-                          srgcgi_username: str = Form(config.srgcgi_username),
-                          srgcgi_password: str = Form(config.srgcgi_password),
-                          deconz_active: bool = Form(config.deconz_active),
-                          deconz_min_lux: str = Form(config.deconz_min_lux),
-                          deconz_max_lux: str = Form(config.deconz_max_lux),
-                          deconz_cled_type: str = Form(config.deconz_cled_type),
-                          verbose: int = Form(config.verbose),
-                          monday_active: bool = Form(False),
-                          tuesday_active: bool = Form(False),
-                          wednesday_active: bool = Form(False),
-                          thursday_active: bool = Form(False),
-                          friday_active: bool = Form(False),
-                          saturday_active: bool = Form(False),
-                          sunday_active: bool = Form(False),
-                          monday_on: str = Form(...),
-                          monday_off: str = Form(...),
-                          tuesday_on: str = Form(...),
-                          tuesday_off: str = Form(...),
-                          wednesday_on: str = Form(...),
-                          wednesday_off: str = Form(...),
-                          thursday_on: str = Form(...),
-                          thursday_off: str = Form(...),
-                          friday_on: str = Form(...),
-                          friday_off: str = Form(...),
-                          saturday_on: str = Form(...),
-                          saturday_off: str = Form(...),
-                          sunday_on: str = Form(...),
-                          sunday_off: str = Form(...)
-                          ):
-        
-    ## Process for crontab
-    if adcp_use_schedule:
-        settings_cron = {
-            'monday_active': monday_active,
-            'monday_on': monday_on,
-            'monday_off': monday_off,
-            'tuesday_active': tuesday_active,
-            'tuesday_on': tuesday_on,
-            'tuesday_off': tuesday_off,
-            'wednesday_active': wednesday_active,
-            'wednesday_on': wednesday_on,
-            'wednesday_off': wednesday_off,
-            'thursday_active': thursday_active,
-            'thursday_on': thursday_on,
-            'thursday_off': thursday_off,
-            'friday_active': friday_active,
-            'friday_on': friday_on,
-            'friday_off': friday_off,
-            'saturday_active': saturday_active,
-            'saturday_on': saturday_on,
-            'saturday_off': saturday_off,
-            'sunday_active': sunday_active,
-            'sunday_on': sunday_on,
-            'sunday_off': sunday_off
-        }
-        remove_crontab(cron_user=current_user)
-        write_crontab(cron_user=current_user, cron_dict=settings_cron)
-    else:
-        remove_crontab(cron_user=current_user)
-
-    ## After pressing submit we need to save dict to settings.json
-    data = {
-        'vlc_default_videodir': vlc_default_videodir,
-        'vlc_custom_usb_videodir': vlc_custom_usb_videodir,
-        'adcp_host': adcp_host,
-        'adcp_port': adcp_port,
-        'adcp_password': adcp_password,
-        'adcp_use_schedule': adcp_use_schedule,
-        'srgcgi_host': srgcgi_host,
-        'srgcgi_port': srgcgi_port,
-        'srgcgi_username': srgcgi_username,
-        'srgcgi_password': srgcgi_password,
-        'deconz_active': deconz_active,
-        'deconz_min_lux': deconz_min_lux,
-        'deconz_max_lux': deconz_max_lux,
-        'deconz_cled_type': deconz_cled_type,
-        'verbose': verbose
-    }
-    data_config = ModelConfig(**data)
-    ## This save also read out the updated config
-    config = SaveConfig(data_config)
-
-    settings = {}
-    context = {}
-    for k,v in iter(config):
-        ## Transcode BaseModel object to dict
-        print(f"{k} -> {v}")
-        settings[k] = v
-    context['config'] = settings
-    cron_read = read_crontab(cron_user=current_user)
-    context['config'].update(cron_read)
-
-    return templates.TemplateResponse(
-        request=request, name="settings.html", context=context
-    )
 
 ## WebSocket connection
 @app.websocket("/ws")
@@ -295,6 +166,6 @@ if(__name__) == '__main__':
         uvicorn.run(
         "main:app",
         host    = "0.0.0.0",
-        port    = 5000, 
+        port    = 8080, 
         reload  = True
     )
