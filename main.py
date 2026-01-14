@@ -54,11 +54,11 @@ class ModelBluRay(str, Enum):
     '''
     Valid functions for the BluRay class
     '''
-    SetPowerOn = "BluRay_SetPowerOn"
-    SetPowerOff = "BluRay_SetPowerOff"
-    Play = "BluRay_Play"
-    Pause = "BluRay_Pause"
-    Stop = "BluRay_Stop"
+    BluRay_SetPowerOn = "BluRay_SetPowerOn"
+    BluRay_SetPowerOff = "BluRay_SetPowerOff"
+    BluRay_Play = "BluRay_Play"
+    BluRay_Pause = "BluRay_Pause"
+    BluRay_Stop = "BluRay_Stop"
 
 class ModelSystem(str, Enum):
     '''
@@ -122,7 +122,20 @@ async def bravia_api_function(function: ModelBRAVIA):
         result.append(bravia2.get_power_status())
     return result
 
-
+## BluRay
+@app.get("/api/bluray/{function}")
+async def bluray_api_function(function: ModelBluRay):
+    result = []
+    if check_flooding(function.value):
+        return {'Error': 'Flooding'}
+    try:
+        config = ReadConfig()
+        bluray1 = BluRay(host_ip=config.bravia_host_01, psk=config.bravia_psk_01)
+    except:
+        return {"ERROR": "Could not connect to host"}
+    if function is ModelBluRay.BluRay_Play:
+        result.append(bluray1.play())
+    return result
 
 
 
