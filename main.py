@@ -154,6 +154,19 @@ async def bravia(request: Request, function: ModelBRAVIA | None=None):
         request=request, name="bravia.html", context=context
     )
 
+@app.get("/control", response_class=HTMLResponse)
+async def bravia_control(request: Request, function: ModelBRAVIA | None=None):
+    ## If we get a function we need to execute that action. Result is used to print status.
+    config = ReadConfig()
+    context = {}
+    if function:
+        result = await bravia_api_function(function)
+        ## Create context to pass to bootstrap
+        context["status"] = result
+
+    return templates.TemplateResponse(
+        request=request, name="bravia_control.html", context=context
+    )
 
 
 ## WebSocket connection
