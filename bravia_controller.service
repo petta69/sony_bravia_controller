@@ -1,0 +1,10 @@
+[Unit]
+Description=bravia_controller
+
+[Service]
+Type=idle
+ExecStart=/home/peter/source/sony_bravia_controller/start_controller.sh
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
