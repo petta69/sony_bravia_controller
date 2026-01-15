@@ -68,11 +68,6 @@ class bluray_player:
     ## Defined commands
     ##
 
-    def set_power_on(self):
-        command = 'POWR'
-        parameter = '0000000000000001'
-        self._send_command(command=command, parameter=parameter)
-
     def set_eject_disc(self):
         command = {
             "type": "set",
@@ -81,6 +76,21 @@ class bluray_player:
         }
         self._send_command(command=command)
 
+    def play(self):
+        command = {
+            "type": "set",
+            "feature": "gui.play",
+            "value": "pulse"
+        }
+        self._send_command(command=command)
+
+    def pause(self):
+        command = {
+            "type": "set",
+            "feature": "gui.pause",
+            "value": "pulse"
+        }
+        self._send_command(command=command)
 
 
 if __name__ == "__main__":

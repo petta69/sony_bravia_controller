@@ -16,7 +16,7 @@ class ModelConfig(BaseModel):
     bravia_use_https_02: Optional[bool] = False
     bravia_psk_02: Optional[str] = "sony123456789012"
     bluray_host: Optional[str] = "192.168.111.10"
-    bluray_port: Optional[int] = 23
+    bluray_port: Optional[int] = 3336
     verbose: Optional[int] = 5
     
     

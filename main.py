@@ -20,6 +20,7 @@ from logger import Logger
 logger = Logger(name=__name__, level=config.verbose, file_path="/tmp/rsony_bravia_controller.txt").get_logger()
 
 from bravia_restAPI import BRAVIA_RESTAPI
+from sony_bluray import bluray_player
 #from lib.system import reboot_rpi
 
 
@@ -130,7 +131,7 @@ async def bluray_api_function(function: ModelBluRay):
         return {'Error': 'Flooding'}
     try:
         config = ReadConfig()
-        bluray1 = BluRay(host_ip=config.bravia_host_01, psk=config.bravia_psk_01)
+        bluray1 = bluray_player(host_ip=config.bluray_host, port=config.bluray_port)
     except:
         return {"ERROR": "Could not connect to host"}
     if function is ModelBluRay.BluRay_Play:
