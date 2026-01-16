@@ -46,11 +46,18 @@
             console.log('BluRay_Pause');
             changeImg(objImg, newSrc);
         }
+        function openFullscreen(element) {
+            const elem = document.documentElement; // or any specific element
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+                element.hidden = true;
+            }
+        }
 
     </script>
+        <br>
+        <button id="ClickMe" onclick="openFullscreen(this)">Fullscreen</button>
 
-        <br><br>
-       
         <div class="container-fluid">
 
             <div class="row align-items-center justify-content-center">
@@ -65,24 +72,17 @@
                 </div>
             </div>
 
-
-        </div><br><br>
-        
-        <div class="container-fluid">
+            <br><br>
 
             <div class="row align-items-center justify-content-center">
-                <div class="col">
+                <div class="col-4">
                     <img onclick="BluRay_Play(this, 'icons/playa.png');" src="icons/play.png" alt="Play" class="img-fluid">
                 </div>
-                <div class="col">
+                <div class="col-4">
                     <img onclick="BluRay_Pause(this, 'icons/pausea.png');" src="icons/pause.png" alt="Pause" class="img-fluid">
                 </div>
-                    <div class="col">
 
             </div>
-
-        </div>
-        <br><br>
         
     </body>
 {% endblock %}
